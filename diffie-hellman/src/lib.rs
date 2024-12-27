@@ -16,15 +16,15 @@ fn modular_pow(base: u64, exponent: u64, modulus: u64) -> u64 {
     if modulus == 1 {
         return 0;
     }
-    let mut result = 1;
-    let mut base = base % modulus;
+    let mut result: u128 = 1;
+    let mut base: u128 = (base % modulus) as u128;
     let mut exp = exponent;
     while exp > 0 {
         if exp % 2 == 1 {
-            result = (result * base) % modulus;
+            result = (result * base) % modulus as u128;
         }
-        base = (base * base) % modulus;
+        base = (base * base) % modulus as u128;
         exp >>= 1;
     }
-    result
+    result as u64
 }
