@@ -25,31 +25,28 @@ pub fn annotate(minefield: &[&str]) -> Vec<String> {
             return '*';
         }
 
-        let mut count = 0;
-        for (ox, oy) in NEIGHBOURHOOD_OFFSETS {
-            let i = x as i32 + ox;
-            let j = y as i32 + oy;
-            if i < 0 || i >= m as i32 || j < 0 || j >= n as i32 {
-                continue;
-            }
-            if minefield[i as usize].as_bytes()[j as usize] == b'*' {
-                count += 1;
-            }
-        }
+        let count = NEIGHBOURHOOD_OFFSETS
+            .iter()
+            .filter(|(ox, oy)| {
+                let i = x as i32 + ox;
+                let j = y as i32 + oy;
+                i >= 0 && i < m as i32 && j >= 0 && j < n as i32 
+                    && minefield[i as usize].as_bytes()[j as usize] == b'*'
+            })
+            .count();
+
         if count == 0 {
             ' '
         } else {
-            (b'0' + count) as char
+            (b'0' + count as u8) as char
         }
     };
 
-    let mut ret = Vec::with_capacity(m);
-    for i in 0..m {
-        let mut s = String::with_capacity(n);
-        for j in 0..n {
-            s.push(count_mines(i, j));
-        }
-        ret.push(s);
-    }
-    ret
+    (0..m)
+        .map(|i| {
+            (0..n)
+                .map(|j| count_mines(i, j))
+                .collect::<String>()
+        })
+        .collect()
 }
