@@ -1,24 +1,25 @@
 pub struct PrimeIter {
-    current: u64,
     primes: Vec<u64>,
+}
+
+impl Default for PrimeIter {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl PrimeIter {
     pub fn new() -> Self {
-        PrimeIter {
-            current: 2,
-            primes: Vec::new(),
-        }
+        PrimeIter { primes: vec![] }
     }
 
-    fn is_prime(&self, n: u64) -> bool {
-        if n < 2 {
-            return false;
-        }
-        let sqrt = (n as f64).sqrt() as u64;
-        for &prime in self.primes.iter().take_while(|&&p| p <= sqrt) {
-            if n % prime == 0 {
+    pub fn is_prime(&self, n: u64) -> bool {
+        for p in &self.primes {
+            if n % *p == 0 {
                 return false;
+            }
+            if p * p > n {
+                break;
             }
         }
         true
@@ -29,20 +30,24 @@ impl Iterator for PrimeIter {
     type Item = u64;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while !self.is_prime(self.current) {
-            self.current += 1;
+        if self.primes.is_empty() {
+            self.primes.push(2);
+        } else {
+            let mut current = self.primes.last().unwrap() + 1;
+            while !self.is_prime(current) {
+                current += 1;
+            }
+            self.primes.push(current);
         }
-        let prime = self.current;
-        self.primes.push(prime);
-        self.current += 1;
-        Some(prime)
+
+        self.primes.last().copied()
     }
 }
 
 pub fn factors(n: u64) -> Vec<u64> {
     let mut factors = Vec::new();
     let mut n = n;
-    
+
     for prime in PrimeIter::new() {
         while n % prime == 0 {
             factors.push(prime);
