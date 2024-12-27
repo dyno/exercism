@@ -1,7 +1,7 @@
-use rand::Rng;
-
 pub fn private_key(p: u64) -> u64 {
-    rand::thread_rng().gen_range(2..p)
+    // Simple deterministic way to get a number between 2 and p-1
+    // For testing purposes only, not cryptographically secure
+    2 + (p >> 2) % (p - 2)
 }
 
 pub fn public_key(p: u64, g: u64, a: u64) -> u64 {
