@@ -1,5 +1,5 @@
 
-static NEIGBOURHOOD_OFFSETS: &'static [(i32, i32)] = &[
+const NEIGHBOURHOOD_OFFSETS: &[(i32, i32)] = &[
     (-1, -1),
     (0, -1),
     (1, -1),
@@ -27,7 +27,7 @@ pub fn annotate(minefield: &[&str]) -> Vec<String> {
         }
 
         let mut count = 0;
-        for &(ox, oy) in NEIGBOURHOOD_OFFSETS {
+        for &(ox, oy) in NEIGHBOURHOOD_OFFSETS {
             let i = x as i32 + ox;
             let j = y as i32 + oy;
             if i < 0 || i >= m as i32 || j < 0 || j >= n as i32 {
