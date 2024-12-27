@@ -1,4 +1,3 @@
-use std::cmp::min;
 
 static NEIGBOURHOOD_OFFSETS: &'static [(i32, i32)] = &[
     (-1, -1),
