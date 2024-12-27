@@ -11,6 +11,13 @@ pub fn public_key(p: u64, g: u64, a: u64) -> u64 {
 pub fn secret(p: u64, b_pub: u64, a: u64) -> u64 {
     modular_pow(b_pub, a, p)
 }
+/// Compute (base^exponent) % modulus, using exponentiation by squaring.
+///
+/// This function is used to compute the public key and the secret key in
+/// the Diffie-Hellman key exchange.
+///
+/// The function uses exponentiation by squaring, which is more efficient than
+/// the naive approach of computing `base^exponent` and then taking the modulus.
 
 fn modular_pow(base: u64, exponent: u64, modulus: u64) -> u64 {
     if modulus == 1 {
