@@ -16,13 +16,11 @@ const BASE: [(u32, &'static str); 13] = [
     (1, "I"),
 ];
 
-pub struct Roman {
-    n: u32,
-}
+pub struct Roman(u32);
 
 impl Display for Roman {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let mut num = self.n;
+        let mut num = self.0;
         for &(b, c) in BASE.iter() {
             while num >= b {
                 write!(f, "{c}")?;
@@ -35,6 +33,6 @@ impl Display for Roman {
 
 impl From<u32> for Roman {
     fn from(num: u32) -> Self {
-        Roman { n: num }
+        Roman(num)
     }
 }
