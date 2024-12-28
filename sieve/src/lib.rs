@@ -1,20 +1,12 @@
 pub fn primes_up_to(upper_bound: u64) -> Vec<u64> {
-    let mut xs = vec![true; upper_bound as usize + 1];
+    let mut xs: Vec<_> = (0..=upper_bound).map(Option::from).collect();
+    let upper_bound = upper_bound as usize;
 
-    xs[0] = false;
-    xs[1] = false;
-    
-    let sqrt_bound = (upper_bound as f64).sqrt() as u64;
-    for i in 2..=sqrt_bound {
-        if xs[i as usize] {
-            for j in (i * i..=upper_bound).step_by(i as usize) {
-                xs[j as usize] = false;
-            }
-        }
-    }
-    
-    xs.iter()
-        .enumerate()
-        .filter_map(|(i, &x)| if x { Some(i as u64) } else { None })
+    (2..=upper_bound)
+        .filter_map(|i| {
+            let p = xs[i].take()? as usize;
+            (p * p..=upper_bound).step_by(p).for_each(|j| xs[j] = None);
+            Some(p as u64)
+        })
         .collect()
 }
