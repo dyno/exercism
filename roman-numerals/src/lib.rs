@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter, Result};
 
-const BASE: [(u32, &'static str); 13] = [
+const BASE: [(u32, &str); 13] = [
     (1000, "M"),
     (900, "CM"),
     (500, "D"),
