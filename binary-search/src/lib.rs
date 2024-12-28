@@ -3,7 +3,7 @@ pub fn find(array: &[i32], key: i32) -> Option<usize> {
         return None;
     }
 
-    let (mut lo, mut hi) = (0, array.len() - 1);
+    let (mut lo, mut hi) = (0, array.len());
     while lo < hi {
         let mid = lo + (hi - lo) / 2;
         if array[mid] < key {
@@ -15,7 +15,7 @@ pub fn find(array: &[i32], key: i32) -> Option<usize> {
 
     // the algorithm is implemented as bisect_left. lo is the index where the
     // key will be inserted at the first position where key <= array[i]
-    if array[lo] == key {
+    if lo < array.len() && array[lo] == key {
         Some(lo)
     } else {
         None
