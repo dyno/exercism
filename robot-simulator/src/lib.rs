@@ -24,40 +24,50 @@ impl Robot {
     #[must_use]
     pub fn turn_right(self) -> Self {
         Self {
-            x: self.x,
-            y: self.y,
             d: match self.d {
                 North => East,
                 East => South,
                 South => West,
                 West => North,
             },
+            ..self
         }
     }
 
     #[must_use]
     pub fn turn_left(self) -> Self {
         Self {
-            x: self.x,
-            y: self.y,
             d: match self.d {
                 North => West,
                 East => North,
                 South => East,
                 West => South,
             },
+            ..self
         }
     }
 
     #[must_use]
     pub fn advance(self) -> Self {
-        let (x, y) = match self.d {
-            North => (self.x, self.y + 1),
-            East => (self.x + 1, self.y),
-            South => (self.x, self.y - 1),
-            West => (self.x - 1, self.y),
-        };
-        Self { x, y, d: self.d }
+        match self.d {
+            North => Self {
+                y: self.y + 1,
+                ..self
+            },
+            East => Self {
+                x: self.x + 1,
+                ..self
+            },
+            South => Self {
+                x: self.x,
+                y: self.y - 1,
+                ..self
+            },
+            West => Self {
+                x: self.x - 1,
+                ..self
+            },
+        }
     }
 
     #[must_use]
