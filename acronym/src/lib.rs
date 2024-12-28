@@ -15,3 +15,14 @@ pub fn abbreviate(phrase: &str) -> String {
 
     acc
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_abbreviate() {
+        assert_eq!(abbreviate("mTLS"), "MT");
+        assert_eq!(abbreviate("GNU Image Manipulation Program"), "GIMP");
+    }
+}
