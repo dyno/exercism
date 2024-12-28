@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter, Result};
 
-const BASE: [(u32, &str); 13] = [
+const BASE: [(u32, &'static str); 13] = [
     (1000, "M"),
     (900, "CM"),
     (500, "D"),
@@ -21,11 +21,11 @@ pub struct Roman {
 }
 
 impl Display for Roman {
-    fn fmt(&self, _f: &mut Formatter<'_>) -> Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let mut num = self.n;
         for &(b, c) in BASE.iter() {
             while num >= b {
-                write!(_f, "{}", c)?;
+                write!(f, "{c}")?;
                 num -= b;
             }
         }
