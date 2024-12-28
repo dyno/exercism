@@ -2,30 +2,31 @@ pub struct Luhn(String);
 
 impl Luhn {
     pub fn is_valid(&self) -> bool {
-        let input: Vec<char> = self.0.chars().filter(|&c| !c.is_whitespace()).collect();
-
-        if input.iter().any(|&c| !c.is_digit(10)) {
-            return false;
-        }
-
-        let (count, sum) = input
-            .iter()
-            .filter_map(|c| c.to_digit(10))
+        self.0
+            .chars()
+            .filter(|&c| !c.is_whitespace())
             .rev()
             .enumerate()
-            .map(|(i, d)| if i % 2 == 1 { d * 2 } else { d })
-            .map(|d| if d > 9 { d - 9 } else { d })
-            .fold((0, 0), |(count, sum), d| (count + 1, sum + d));
-
-        count > 1 && sum % 10 == 0
+            .try_fold((0 as u32, 0 as u32), |(count, sum), (i, c)| {
+                c.to_digit(10).map(|d| {
+                    let v = if i % 2 == 0 {
+                        d
+                    } else {
+                        let doubled = d * 2;
+                        if doubled > 9 {
+                            doubled - 9
+                        } else {
+                            doubled
+                        }
+                    };
+                    (count + 1, sum + v)
+                })
+            })
+            .map(|(count, sum)| count > 1 && sum % 10 == 0)
+            .unwrap_or_else(|| false)
     }
 }
 
-/// Here is the example of how the From trait could be implemented
-/// for the &str type. Naturally, you can implement this trait
-/// by hand for every other type presented in the test suite,
-/// but your solution will fail if a new type is presented.
-/// Perhaps there exists a better solution for this problem?
 impl<T> From<T> for Luhn
 where
     T: ToString,
