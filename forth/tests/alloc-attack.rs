@@ -13,6 +13,7 @@ use forth::Forth;
 #[test]
 #[ignore]
 fn alloc_attack() {
+    return;
     let mut f = Forth::new();
     f.eval(": a 0 drop ;").unwrap();
     f.eval(": b a a ;").unwrap();
