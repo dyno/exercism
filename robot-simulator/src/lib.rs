@@ -9,13 +9,14 @@ pub enum Direction {
     West,
 }
 
+use Direction::*;
+
 pub struct Robot {
     x: i32,
     y: i32,
     d: Direction,
 }
 
-use Direction::*;
 impl Robot {
     pub fn new(x: i32, y: i32, d: Direction) -> Self {
         Self { x, y, d }
