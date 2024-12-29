@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 
 pub type Value = i32;
 pub type Result = std::result::Result<(), Error>;
@@ -18,9 +19,9 @@ impl From<&str> for VersionedOp {
         Self { name, version }
     }
 }
-impl ToString for VersionedOp {
-    fn to_string(&self) -> String {
-        format!("{}@{}", self.name, self.version)
+impl Display for VersionedOp {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}@{}", self.name, self.version)
     }
 }
 
