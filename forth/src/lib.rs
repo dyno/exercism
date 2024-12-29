@@ -76,8 +76,8 @@ impl Forth {
                     self.redefine_op(&stk[1..])?;
                     stk.clear();
                 }
-                _ if !stk.is_empty() => stk.push(word),
-                _ => self.eval_with_defined_ops(word.as_str())?,
+                _ if !stk.is_empty() => stk.push(word.to_ascii_uppercase()),
+                _ => self.eval_with_defined_ops(word.to_ascii_uppercase().as_str())?,
             }
         }
 
@@ -109,15 +109,14 @@ impl Forth {
             return Err(Error::InvalidWord);
         }
 
-        let name = stk[0].to_ascii_uppercase();
+        let name = &stk[0];
         if name.parse::<Value>().is_ok() {
             return Err(Error::InvalidWord);
         }
 
         let code = stk[1..]
             .iter()
-            .map(|s| s.to_ascii_uppercase())
-            .map(|s| self.heads.get(&s).unwrap_or(&s).to_string())
+            .map(|s| self.heads.get(s.as_str()).unwrap_or(s).to_string())
             .collect::<Vec<_>>()
             .join(" ");
 
@@ -126,7 +125,7 @@ impl Forth {
             name: name.to_string(),
             version: self
                 .heads
-                .get(&name)
+                .get(name)
                 .map(|v| VersionedOp::from(v.as_str()).version + 1)
                 .unwrap_or(1),
         }
