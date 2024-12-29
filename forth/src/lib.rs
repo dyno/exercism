@@ -3,9 +3,10 @@ use std::collections::HashMap;
 pub type Value = i32;
 pub type Result = std::result::Result<(), Error>;
 
+#[derive(Clone)]
 enum Op {
     Executable(fn(&mut Forth) -> Result),
-    Scriptable(String),
+    Scriptable(HashMap<String, Op>, String),
 }
 
 pub struct Forth {
@@ -65,23 +66,31 @@ impl Forth {
                 }
                 _ if in_user_defined => stk.push(word),
                 _ if word.parse::<Value>().is_ok() => self.stack.push(word.parse().unwrap()),
-                _ => self.eval_with_defined_ops(word.as_str())?,
+                _ => {
+                    let ops_snapshot = self.ops.clone();
+                    self.eval_with_defined_ops(word.as_str(), &ops_snapshot)?
+                }
             }
         }
 
         Ok(())
     }
 
-    fn eval_with_defined_ops(&mut self, word: &str) -> Result {
-        if !self.ops.contains_key(word) {
+    fn eval_with_defined_ops(&mut self, word: &str, ops_snapshot: &HashMap<String, Op>) -> Result {
+        if word.parse::<Value>().is_ok() {
+            self.stack.push(word.parse().unwrap());
+            return Ok(());
+        }
+        if !ops_snapshot.contains_key(word) {
             return Err(Error::UnknownWord);
         }
-        match self.ops.get(word).unwrap() {
+        let op = ops_snapshot.get(word).unwrap().clone();
+        match op.clone() {
             Op::Executable(f) => f(self)?,
-            Op::Scriptable(s) => {
+            Op::Scriptable(ops_snapshot, s) => {
                 let s1 = s.clone();
                 for wd in s1.split_whitespace() {
-                    self.eval_with_defined_ops(wd)?
+                    self.eval_with_defined_ops(wd, &ops_snapshot)?;
                 }
             }
         }
@@ -94,7 +103,6 @@ impl Forth {
         }
 
         let name = stk[0].to_ascii_uppercase();
-        // cannot redefine number positive or negative
         if name.parse::<Value>().is_ok() {
             return Err(Error::InvalidWord);
         }
@@ -102,9 +110,11 @@ impl Forth {
         let code = stk[1..]
             .iter()
             .map(|s| s.to_ascii_uppercase())
-            .collect::<Vec<String>>()
+            .collect::<Vec<_>>()
             .join(" ");
-        self.ops.insert(name, Op::Scriptable(code));
+
+        let ops_snapshot = self.ops.clone();
+        self.ops.insert(name, Op::Scriptable(ops_snapshot, code));
         Ok(())
     }
 
