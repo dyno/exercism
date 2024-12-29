@@ -69,23 +69,14 @@ impl Forth {
 
     pub fn eval(&mut self, input: &str) -> Result {
         let mut stk: Vec<String> = Vec::new();
-        let mut in_user_defined = false;
-
         for word in input.split_whitespace().map(|w| w.to_uppercase()) {
             match word.as_str() {
-                ":" => {
-                    if in_user_defined {
-                        // don't support nested user-defined words
-                        return Err(Error::InvalidWord);
-                    }
-                    in_user_defined = true;
-                    stk.clear()
-                }
+                ":" => stk.push(":".to_string()),
                 ";" => {
-                    in_user_defined = false;
-                    self.redefine_op(&stk)?
+                    self.redefine_op(&stk[1..])?;
+                    stk.clear();
                 }
-                _ if in_user_defined => stk.push(word),
+                _ if !stk.is_empty() => stk.push(word),
                 _ => self.eval_with_defined_ops(word.as_str())?,
             }
         }
@@ -117,7 +108,7 @@ impl Forth {
         Ok(())
     }
 
-    fn redefine_op(&mut self, stk: &Vec<String>) -> Result {
+    fn redefine_op(&mut self, stk: &[String]) -> Result {
         if stk.len() < 2 {
             return Err(Error::InvalidWord);
         }
