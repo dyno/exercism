@@ -4,20 +4,21 @@ pub type Value = i32;
 pub type Result = std::result::Result<(), Error>;
 
 #[derive(Clone)]
-struct VersionedOP {
+struct VersionedOp {
     name: String,
     version: u32,
 }
-impl From<&str> for VersionedOP {
+impl From<&str> for VersionedOp {
     fn from(s: &str) -> Self {
-        let mut split = s.split('@');
-        let name = split.next().unwrap().to_string();
-        let version = split.next().unwrap_or("0").parse::<u32>().unwrap();
+        let (name, version) = s
+            .split_once('@')
+            .map(|(n, v)| (n.to_string(), v.parse::<u32>().unwrap()))
+            .unwrap_or_else(|| (s.to_string(), 0));
 
         Self { name, version }
     }
 }
-impl ToString for VersionedOP {
+impl ToString for VersionedOp {
     fn to_string(&self) -> String {
         format!("{}@{}", self.name, self.version)
     }
@@ -73,7 +74,6 @@ impl Forth {
         for word in input.split_whitespace().map(|w| w.to_uppercase()) {
             match word.as_str() {
                 ":" => {
-                    // start of user-defined word
                     if in_user_defined {
                         // don't support nested user-defined words
                         return Err(Error::InvalidWord);
@@ -82,12 +82,10 @@ impl Forth {
                     stk.clear()
                 }
                 ";" => {
-                    // end of user-defined word
                     in_user_defined = false;
                     self.redefine_op(&stk)?
                 }
                 _ if in_user_defined => stk.push(word),
-                _ if word.parse::<Value>().is_ok() => self.stack.push(word.parse().unwrap()),
                 _ => self.eval_with_defined_ops(word.as_str())?,
             }
         }
@@ -137,14 +135,16 @@ impl Forth {
             .join(" ");
 
         // Increment the version for the word
-        let versioned_name = format!(
-            "{}@{}",
-            name,
-            self.heads
+        let versioned_name = VersionedOp {
+            name: name.to_string(),
+            version: self
+                .heads
                 .get(&name)
-                .map(|v| VersionedOP::from(v.as_str()).version + 1)
-                .unwrap_or(1)
-        );
+                .map(|v| VersionedOp::from(v.as_str()).version + 1)
+                .unwrap_or(1),
+        }
+        .to_string();
+
         self.ops
             .insert(versioned_name.clone(), Op::Scriptable(code));
         self.heads.insert(name.clone(), versioned_name.clone());
@@ -152,42 +152,38 @@ impl Forth {
         Ok(())
     }
 
+    fn pop(&mut self) -> std::result::Result<Value, Error> {
+        self.stack.pop().ok_or(Error::StackUnderflow)
+    }
+
+    fn top(&mut self) -> std::result::Result<Value, Error> {
+        self.stack.last().cloned().ok_or(Error::StackUnderflow)
+    }
+
     fn add(&mut self) -> Result {
-        if self.stack.len() < 2 {
-            return Err(Error::StackUnderflow);
-        }
-        let b = self.stack.pop().unwrap();
-        let a = self.stack.pop().unwrap();
+        let b = self.pop()?;
+        let a = self.pop()?;
         self.stack.push(a + b);
         Ok(())
     }
 
     fn sub(&mut self) -> Result {
-        if self.stack.len() < 2 {
-            return Err(Error::StackUnderflow);
-        }
-        let b = self.stack.pop().unwrap();
-        let a = self.stack.pop().unwrap();
+        let b = self.pop()?;
+        let a = self.pop()?;
         self.stack.push(a - b);
         Ok(())
     }
 
     fn mul(&mut self) -> Result {
-        if self.stack.len() < 2 {
-            return Err(Error::StackUnderflow);
-        }
-        let b = self.stack.pop().unwrap();
-        let a = self.stack.pop().unwrap();
+        let b = self.pop()?;
+        let a = self.pop()?;
         self.stack.push(a * b);
         Ok(())
     }
 
     fn div(&mut self) -> Result {
-        if self.stack.len() < 2 {
-            return Err(Error::StackUnderflow);
-        }
-        let b = self.stack.pop().unwrap();
-        let a = self.stack.pop().unwrap();
+        let b = self.pop()?;
+        let a = self.pop()?;
         if b == 0 {
             return Err(Error::DivisionByZero);
         }
@@ -196,39 +192,30 @@ impl Forth {
     }
 
     fn dup(&mut self) -> Result {
-        if self.stack.len() < 1 {
-            return Err(Error::StackUnderflow);
-        }
-        let a = self.stack[self.stack.len() - 1];
+        let a = self.pop()?;
+        self.stack.push(a);
         self.stack.push(a);
         Ok(())
     }
 
     fn drop(&mut self) -> Result {
-        if self.stack.len() < 1 {
-            return Err(Error::StackUnderflow);
-        }
-        self.stack.pop();
+        self.pop()?;
         Ok(())
     }
 
     fn swap(&mut self) -> Result {
-        if self.stack.len() < 2 {
-            return Err(Error::StackUnderflow);
-        }
-        let b = self.stack.pop().unwrap();
-        let a = self.stack.pop().unwrap();
+        let b = self.pop()?;
+        let a = self.pop()?;
         self.stack.push(b);
         self.stack.push(a);
         Ok(())
     }
 
     fn over(&mut self) -> Result {
-        if self.stack.len() < 2 {
-            return Err(Error::StackUnderflow);
-        }
-        let a = self.stack[self.stack.len() - 2];
+        let a = self.pop()?;
+        let b = self.top()?;
         self.stack.push(a);
+        self.stack.push(b);
         Ok(())
     }
 }
