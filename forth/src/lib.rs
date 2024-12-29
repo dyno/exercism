@@ -4,14 +4,35 @@ pub type Value = i32;
 pub type Result = std::result::Result<(), Error>;
 
 #[derive(Clone)]
+struct VersionedOP {
+    name: String,
+    version: u32,
+}
+impl From<&str> for VersionedOP {
+    fn from(s: &str) -> Self {
+        let mut split = s.split('@');
+        let name = split.next().unwrap().to_string();
+        let version = split.next().unwrap_or("0").parse::<u32>().unwrap();
+
+        Self { name, version }
+    }
+}
+impl ToString for VersionedOP {
+    fn to_string(&self) -> String {
+        format!("{}@{}", self.name, self.version)
+    }
+}
+
+#[derive(Clone)]
 enum Op {
     Executable(fn(&mut Forth) -> Result),
-    Scriptable(HashMap<String, Op>, String),
+    Scriptable(String),
 }
 
 pub struct Forth {
     stack: Vec<Value>,
-    ops: HashMap<String, Op>,
+    ops: HashMap<String, Op>,       // name -> Op
+    heads: HashMap<String, String>, // name -> name@version
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -37,6 +58,7 @@ impl Forth {
         Self {
             stack: Vec::new(),
             ops,
+            heads: HashMap::new(),
         }
     }
 
@@ -66,31 +88,31 @@ impl Forth {
                 }
                 _ if in_user_defined => stk.push(word),
                 _ if word.parse::<Value>().is_ok() => self.stack.push(word.parse().unwrap()),
-                _ => {
-                    let ops_snapshot = self.ops.clone();
-                    self.eval_with_defined_ops(word.as_str(), &ops_snapshot)?
-                }
+                _ => self.eval_with_defined_ops(word.as_str())?,
             }
         }
 
         Ok(())
     }
 
-    fn eval_with_defined_ops(&mut self, word: &str, ops_snapshot: &HashMap<String, Op>) -> Result {
+    fn eval_with_defined_ops(&mut self, word: &str) -> Result {
         if word.parse::<Value>().is_ok() {
             self.stack.push(word.parse().unwrap());
             return Ok(());
         }
-        if !ops_snapshot.contains_key(word) {
+
+        let versioned_word = self.heads.get(word).map(|s| s.as_str()).unwrap_or(word);
+        if !self.ops.contains_key(versioned_word) {
             return Err(Error::UnknownWord);
         }
-        let op = ops_snapshot.get(word).unwrap().clone();
-        match op.clone() {
+
+        let op = self.ops.get(versioned_word).unwrap().clone();
+        match op {
             Op::Executable(f) => f(self)?,
-            Op::Scriptable(ops_snapshot, s) => {
+            Op::Scriptable(s) => {
                 let s1 = s.clone();
                 for wd in s1.split_whitespace() {
-                    self.eval_with_defined_ops(wd, &ops_snapshot)?;
+                    self.eval_with_defined_ops(wd)?;
                 }
             }
         }
@@ -110,11 +132,23 @@ impl Forth {
         let code = stk[1..]
             .iter()
             .map(|s| s.to_ascii_uppercase())
+            .map(|s| self.heads.get(&s).unwrap_or(&s).to_string())
             .collect::<Vec<_>>()
             .join(" ");
 
-        let ops_snapshot = self.ops.clone();
-        self.ops.insert(name, Op::Scriptable(ops_snapshot, code));
+        // Increment the version for the word
+        let versioned_name = format!(
+            "{}@{}",
+            name,
+            self.heads
+                .get(&name)
+                .map(|v| VersionedOP::from(v.as_str()).version + 1)
+                .unwrap_or(1)
+        );
+        self.ops
+            .insert(versioned_name.clone(), Op::Scriptable(code));
+        self.heads.insert(name.clone(), versioned_name.clone());
+
         Ok(())
     }
 
