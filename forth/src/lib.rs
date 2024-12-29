@@ -104,7 +104,7 @@ impl Forth {
             return Err(Error::UnknownWord);
         }
 
-        let op = self.ops.get(versioned_word).unwrap().clone();
+        let op = self.ops.get(versioned_word).unwrap();
         match op {
             Op::Executable(f) => f(self)?,
             Op::Scriptable(s) => {
