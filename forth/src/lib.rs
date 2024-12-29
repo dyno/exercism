@@ -91,21 +91,17 @@ impl Forth {
         }
 
         let versioned_word = self.heads.get(word).map(|s| s.as_str()).unwrap_or(word);
-        if !self.ops.contains_key(versioned_word) {
-            return Err(Error::UnknownWord);
-        }
-
-        let op = self.ops.get(versioned_word).unwrap();
-        match op {
-            Op::Executable(f) => f(self)?,
-            Op::Scriptable(s) => {
+        match self.ops.get(versioned_word) {
+            Some(Op::Executable(f)) => f(self).map(|_| Ok(()))?,
+            Some(Op::Scriptable(s)) => {
                 let s1 = s.clone();
                 for wd in s1.split_whitespace() {
                     self.eval_with_defined_ops(wd)?;
                 }
+                Ok(())
             }
+            _ => Err(Error::UnknownWord),
         }
-        Ok(())
     }
 
     fn redefine_op(&mut self, stk: &[String]) -> Result {
